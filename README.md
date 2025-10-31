@@ -1,27 +1,19 @@
 # URL Tester Application
 
-> High-performance concurrent URL testing tool (optimized build: 18MB executable)
-
-##  How It Works
-
-- Uses multi-threaded concurrent requests (20 parallel threads)
-- Sends requests in parallel without waiting for slow responses
-- Example: If 19 URLs respond in 1sec and 1 takes 30sec, the slow one doesn't block the others - threads continuously pick up new work as they finish
-- Result: **~10-20x faster** than sequential testing
-- Perfect for testing thousands of URLs efficiently
-
----
+> High-performance concurrent URL testing tool for QA teams
 
 ##  Quick Start
 
-1. Double-click `url_tester.exe`
+Run the application:
+```bash
+python main.py
+```
 
-2. Choose your testing mode:
-   - **Option 1:** Test defined URL list
-   - **Option 2:** Test URLs from sitemap(s)
+Choose your testing mode:
+- **Option 1:** Test defined URL list
+- **Option 2:** Test URLs from sitemap(s)
 
-
-3. Results will be saved to a new Excel file with timestamp
+Results saved to: `test_results_YYYYMMDD_HHMMSS.xlsx`
 
 ---
 
@@ -37,6 +29,7 @@ Edit `urls_to_test.xlsx`:
 
 - **Root URL:** Enter once in the first row
 - **URL paths:** Can be relative (`/page`) or full URLs
+- Application combines root + path and tests each URL
 
 ---
 
@@ -49,26 +42,62 @@ Edit `sitemaps.xlsx`:
 | https://yoursite.com/sitemap.xml      |                           |
 | https://prod.com/sitemap.xml          | https://dev.example.com   |
 
-- List **EXACTLY** which sitemap URLs you want to test (one per row)
-- **Root column (optional):** Replace URL domain with custom root (e.g., test prod URLs on dev environment)
-- **NO AUTOMATIC CRAWLING:** If a sitemap contains links to other sitemaps (sitemap index), it will be SKIPPED
-- **Why?** Sitemaps can be messy with deep nesting - you control exactly what gets tested by listing specific sitemap URLs
-- You control exactly what gets tested by listing specific sitemap URLs - no surprises!
+**Key Features:**
+- List specific sitemap URLs to test (one per row)
+- **Optional root column:** Test production sitemaps on dev environment
+- **No nested crawling:** Sitemap indices are skipped - you control exactly what gets tested
+
+**Example:** Production sitemap has `https://prod.com/page1`, but you set root to `https://dev.example.com` → tests `https://dev.example.com/page1`
 
 ---
 
 ##  Results
 
-- All URLs with status **200 (OK)** are considered successful
-- Any errors (300, 400, 500, timeouts, etc.) are saved to: `test_results_YYYYMMDD_HHMMSS.xlsx`
-- Progress shows real-time request rate (requests/second)
-- Final summary includes total time and average speed
+- Only **non-200** responses are reported (errors, redirects, timeouts)
+- Report includes: source URL, tested URL, status code, error message, timestamp
+- Real-time progress with requests/second rate
 
 ---
 
 ##  Performance
 
-- **Max concurrent requests:** 20 threads
-- Threads work independently - slow responses don't block fast ones
-- **Typical speed:** 10-20 requests/second (depends on server response)
-- **Example:** 10,000 URLs can be tested in ~10-15 minutes
+- **100 concurrent threads** - threads continuously pick up work as they finish
+- **5 second timeout** per request
+- **Example speeds:**
+  - 10,000 URLs → ~2-3 minutes
+- Fast URLs don't wait for slow ones
+
+---
+
+
+##  Key Design Patterns
+
+1. **Strategy Pattern** - Different URL providers (Excel, Sitemap)
+2. **Service Layer** - Business logic separated from infrastructure
+3. **Dependency Inversion** - Application depends on abstractions, not implementations
+
+**Result:** Clean, extensible code that follows SOLID principles
+
+---
+
+##  Building Executable
+
+### Quick Build (Windows)
+```bash
+build.bat
+```
+
+This creates `url_tester.exe` (~8-15 MB with UPX compression)
+
+### Size Optimization
+The build configuration excludes unnecessary modules and uses compression:
+- ✅ Only bundles required dependencies (requests, openpyxl)
+- ✅ Excludes heavy libraries (numpy, pandas, tkinter, etc.)
+- ✅ Uses UPX compression (install from https://upx.github.io/)
+- ✅ Strips debug symbols
+
+**Expected sizes:**
+- Without UPX: ~15-25 MB
+- With UPX: ~8-15 MB
+
+See `BUILD_INSTRUCTIONS.md` for details.

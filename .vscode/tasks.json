@@ -1,0 +1,132 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Run URL Tester",
+            "type": "shell",
+            "command": "python",
+            "args": [
+                "main.py"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Build Executable",
+            "type": "shell",
+            "command": "pyinstaller",
+            "args": [
+                "build_config.spec",
+                "--clean"
+            ],
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Clean Build Artifacts",
+            "type": "shell",
+            "windows": {
+                "command": "Remove-Item",
+                "args": [
+                    "-Path",
+                    "build,dist,__pycache__,src/__pycache__",
+                    "-Recurse",
+                    "-Force",
+                    "-ErrorAction",
+                    "SilentlyContinue"
+                ]
+            },
+            "linux": {
+                "command": "rm",
+                "args": [
+                    "-rf",
+                    "build",
+                    "dist",
+                    "__pycache__",
+                    "src/__pycache__"
+                ]
+            },
+            "osx": {
+                "command": "rm",
+                "args": [
+                    "-rf",
+                    "build",
+                    "dist",
+                    "__pycache__",
+                    "src/__pycache__"
+                ]
+            },
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Install Dependencies",
+            "type": "shell",
+            "command": "pip",
+            "args": [
+                "install",
+                "-r",
+                "requirements.txt"
+            ],
+            "group": "none",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Install Build Tools",
+            "type": "shell",
+            "command": "pip",
+            "args": [
+                "install",
+                "pyinstaller"
+            ],
+            "group": "none",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Validate Python Syntax",
+            "type": "shell",
+            "command": "python",
+            "args": [
+                "-m",
+                "py_compile",
+                "main.py",
+                "src/models.py",
+                "src/excel_handler.py",
+                "src/url_providers.py",
+                "src/url_tester.py",
+                "src/report_generator.py",
+                "src/application.py"
+            ],
+            "group": "test",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        }
+    ]
+}
+
