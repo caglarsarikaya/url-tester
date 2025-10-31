@@ -25,8 +25,14 @@ echo.
 
 REM Build executable
 echo [2/3] Building executable (this may take a few minutes)...
-pyinstaller build_config.spec --clean
-echo [OK] Build complete
+echo [INFO] Some warnings are normal and can be ignored
+echo.
+pyinstaller build_config.spec --clean 2>&1 | findstr /V "WARNING: Failed to run strip"
+if errorlevel 1 (
+    echo [WARNING] Build completed with some warnings (this is normal^)
+) else (
+    echo [OK] Build complete
+)
 echo.
 
 REM Copy to root directory

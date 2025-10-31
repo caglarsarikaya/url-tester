@@ -38,6 +38,7 @@ class URLTesterService:
             print(f"[INFO] Submission delay: {self.config.delay}s between URLs")
         else:
             print(f"[INFO] No submission delay - maximum speed")
+        print(f"[INFO] Press Ctrl+C to stop testing at any time")
         print("=" * 60)
         
         start_time = time.time()
@@ -69,26 +70,31 @@ class URLTesterService:
             print(f"[INFO] All URLs submitted! Processing results as they complete...")
             
             # Process results as they complete
-            for future in as_completed(futures):
-                url_request = futures[future]
-                try:
-                    result = future.result()
-                    
-                    if result.is_success:
-                        with lock:
-                            success_count += 1
-                    else:
+            try:
+                for future in as_completed(futures):
+                    url_request = futures[future]
+                    try:
+                        result = future.result()
+                        
+                        if result.is_success:
+                            with lock:
+                                success_count += 1
+                        else:
+                            with lock:
+                                error_count += 1
+                            results.append(result)
+                        
+                        update_progress()
+                        
+                    except Exception as e:
                         with lock:
                             error_count += 1
-                        results.append(result)
-                    
-                    update_progress()
-                    
-                except Exception as e:
-                    with lock:
-                        error_count += 1
-                    print(f"[ERROR] Exception processing {url_request.url}: {str(e)}")
-                    update_progress()
+                        print(f"[ERROR] Exception processing {url_request.url}: {str(e)}")
+                        update_progress()
+            except KeyboardInterrupt:
+                print("\n\n[WARNING] Stopping tests... (waiting for active requests to finish)")
+                executor.shutdown(wait=False, cancel_futures=True)
+                raise
         
         # Print summary
         elapsed = time.time() - start_time

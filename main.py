@@ -23,6 +23,8 @@ def main():
         print("=" * 60)
         print("           URL TESTER APPLICATION")
         print("=" * 60)
+        print("\n⚠️  Press Ctrl+C at any time to stop testing")
+        print("=" * 60)
         print("\nSelect testing mode:")
         print("  1. Defined URL list (from urls_to_test.xlsx)")
         print("  2. Sitemap parsing (from sitemaps.xlsx)")
@@ -53,7 +55,16 @@ def main():
         app.run()
         
     except KeyboardInterrupt:
-        print("\n\n[WARNING] Testing interrupted by user")
+        print("\n\n" + "=" * 60)
+        print("⚠️  TESTING STOPPED BY USER (Ctrl+C)")
+        print("=" * 60)
+        print("\n[INFO] Testing was interrupted")
+        print("[INFO] Partial results may have been saved")
+        print("\nPress Enter to exit...")
+        try:
+            input()
+        except:
+            pass
         sys.exit(0)
     except Exception as e:
         print(f"\nERROR: {str(e)}")

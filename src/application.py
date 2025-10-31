@@ -55,6 +55,10 @@ class URLTestApplication:
             print("\n" + "=" * 60)
             print("Testing completed successfully!")
             print("=" * 60)
+        
+        except KeyboardInterrupt:
+            # Re-raise to be handled by main.py
+            raise
             
         except FileNotFoundError as e:
             print(f"\nERROR: {str(e)}")

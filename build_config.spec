@@ -44,13 +44,10 @@ a = Analysis(
         'unittest',
         'test',
         'tests',
-        'distutils',
-        'email',
-        'html',
+        # Note: DO NOT exclude 'email', 'html' - requests library needs them
         'http.server',
         'xmlrpc',
         'pydoc_data',
-        'pkg_resources',
     ],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
@@ -74,8 +71,8 @@ exe = EXE(
     name='url_tester',
     debug=False,
     bootloader_ignore_signals=False,
-    strip=True,  # Strip debug symbols (reduces size)
-    upx=True,    # Use UPX compression (reduces size significantly)
+    strip=False,  # Disabled - causes warnings on Windows without proper strip.exe
+    upx=True,     # Use UPX compression (reduces size significantly)
     upx_exclude=[],
     runtime_tmpdir=None,
     console=True,  # Console application (not GUI)
