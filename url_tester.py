@@ -316,9 +316,20 @@ class URLTester:
                     if status_code != 200:
                         with lock:
                             error_count += 1
+                        
+                        # Determine appropriate labels based on mode
+                        if self.mode == "defined":
+                            # Mode 1: Show path from Excel and full tested URL
+                            source_value = url
+                            tested_value = full_url
+                        else:
+                            # Mode 2: Show original sitemap URL and tested URL (which might use custom root)
+                            source_value = url  # This is the URL from sitemap
+                            tested_value = full_url  # This is what was actually tested
+                        
                         self.errors.append({
-                            'original_url': url,
-                            'full_url': full_url,
+                            'source': source_value,
+                            'tested_url': tested_value,
                             'status_code': status_code,
                             'error_message': error_msg if error_msg else '',
                             'tested_at': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -360,15 +371,19 @@ class URLTester:
             ws = wb.active
             ws.title = "Errors"
             
-            # Write headers
-            headers = ['original_url', 'full_url', 'status_code', 'error_message', 'tested_at']
+            # Write headers based on mode
+            if self.mode == "defined":
+                headers = ['url_from_excel', 'tested_url', 'status_code', 'error_message', 'tested_at']
+            else:
+                headers = ['url_from_sitemap', 'tested_url', 'status_code', 'error_message', 'tested_at']
+            
             ws.append(headers)
             
             # Write data rows
             for error in self.errors:
                 row = [
-                    error['original_url'],
-                    error['full_url'],
+                    error['source'],
+                    error['tested_url'],
                     str(error['status_code']),
                     error['error_message'],
                     error['tested_at']
