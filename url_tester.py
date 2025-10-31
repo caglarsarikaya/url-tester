@@ -1,10 +1,10 @@
 """
-URL Tester Application
+URL Tester Application - Optimized Version
 A tool for testing multiple URLs and reporting any non-200 status codes.
 Supports two modes: 1) Defined URL list 2) Sitemap parsing
+Optimized to reduce executable size by removing pandas dependency.
 """
 
-import pandas as pd
 import requests
 import time
 import sys
@@ -16,6 +16,8 @@ import xml.etree.ElementTree as ET
 from urllib.parse import urljoin
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
+from openpyxl import load_workbook, Workbook
+from openpyxl.utils import get_column_letter
 
 # Set UTF-8 encoding for Windows console
 if sys.platform == 'win32':
@@ -64,7 +66,7 @@ class URLTester:
             return self._load_sitemap_urls()
     
     def _load_defined_urls(self):
-        """Load URLs from the defined URL list Excel file"""
+        """Load URLs from the defined URL list Excel file using openpyxl"""
         try:
             if not Path(self.input_file).exists():
                 self.logger.error(f"Input file '{self.input_file}' not found!")
@@ -73,16 +75,36 @@ class URLTester:
                 input("\nPress Enter to exit...")
                 sys.exit(1)
             
-            df = pd.read_excel(self.input_file)
+            # Load workbook with openpyxl
+            wb = load_workbook(self.input_file, read_only=True, data_only=True)
+            ws = wb.active
             
-            if 'root' not in df.columns or 'url' not in df.columns:
+            # Get headers from first row
+            headers = [cell.value for cell in ws[1]]
+            
+            if 'root' not in headers or 'url' not in headers:
                 self.logger.error("Excel file must have 'root' and 'url' columns!")
                 print("\nERROR: Excel file must have 'root' and 'url' columns!")
                 input("\nPress Enter to exit...")
                 sys.exit(1)
             
-            self.root_url = df['root'].dropna().iloc[0] if not df['root'].dropna().empty else ""
-            self.urls = df['url'].dropna().tolist()
+            root_idx = headers.index('root')
+            url_idx = headers.index('url')
+            
+            # Read data rows
+            root_found = False
+            urls_list = []
+            
+            for row in ws.iter_rows(min_row=2, values_only=True):
+                if not root_found and row[root_idx]:
+                    self.root_url = str(row[root_idx]).strip()
+                    root_found = True
+                
+                if row[url_idx]:
+                    urls_list.append(str(row[url_idx]).strip())
+            
+            self.urls = urls_list
+            wb.close()
             
             self.logger.info(f"Loaded {len(self.urls)} URLs to test")
             self.logger.info(f"Root URL: {self.root_url}")
@@ -108,15 +130,28 @@ class URLTester:
                 input("\nPress Enter to exit...")
                 sys.exit(1)
             
-            df = pd.read_excel(self.input_file)
+            # Load workbook with openpyxl
+            wb = load_workbook(self.input_file, read_only=True, data_only=True)
+            ws = wb.active
             
-            if 'sitemap_url' not in df.columns:
+            # Get headers from first row
+            headers = [cell.value for cell in ws[1]]
+            
+            if 'sitemap_url' not in headers:
                 self.logger.error("Excel file must have 'sitemap_url' column!")
                 print("\nERROR: Excel file must have 'sitemap_url' column!")
                 input("\nPress Enter to exit...")
                 sys.exit(1)
             
-            sitemap_urls = df['sitemap_url'].dropna().tolist()
+            sitemap_idx = headers.index('sitemap_url')
+            
+            # Read sitemap URLs
+            sitemap_urls = []
+            for row in ws.iter_rows(min_row=2, values_only=True):
+                if row[sitemap_idx]:
+                    sitemap_urls.append(str(row[sitemap_idx]).strip())
+            
+            wb.close()
             
             print(f"\n[OK] Found {len(sitemap_urls)} sitemap(s) to parse")
             print("[INFO] Fetching URLs from sitemaps...")
@@ -293,28 +328,50 @@ class URLTester:
         self.logger.info(f"Testing complete - Success: {success_count}, Errors: {error_count}")
     
     def save_results(self):
-        """Save error results to Excel file"""
+        """Save error results to Excel file using openpyxl"""
         if not self.errors:
             print("\n[SUCCESS] No errors found! All URLs returned status 200.")
             self.logger.info("No errors to report")
             return
         
         try:
-            # Create DataFrame from errors
-            df_errors = pd.DataFrame(self.errors)
+            # Create new workbook
+            wb = Workbook()
+            ws = wb.active
+            ws.title = "Errors"
             
-            # Save to Excel with formatting
-            with pd.ExcelWriter(self.output_file, engine='openpyxl') as writer:
-                df_errors.to_excel(writer, index=False, sheet_name='Errors')
+            # Write headers
+            headers = ['original_url', 'full_url', 'status_code', 'error_message', 'tested_at']
+            ws.append(headers)
+            
+            # Write data rows
+            for error in self.errors:
+                row = [
+                    error['original_url'],
+                    error['full_url'],
+                    str(error['status_code']),
+                    error['error_message'],
+                    error['tested_at']
+                ]
+                ws.append(row)
+            
+            # Auto-adjust column widths
+            for idx, col in enumerate(headers, 1):
+                column_letter = get_column_letter(idx)
+                max_length = len(col)
                 
-                # Auto-adjust column widths
-                worksheet = writer.sheets['Errors']
-                for idx, col in enumerate(df_errors.columns):
-                    max_length = max(
-                        df_errors[col].astype(str).apply(len).max(),
-                        len(col)
-                    )
-                    worksheet.column_dimensions[chr(65 + idx)].width = min(max_length + 2, 50)
+                for cell in ws[column_letter]:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except:
+                        pass
+                
+                adjusted_width = min(max_length + 2, 50)
+                ws.column_dimensions[column_letter].width = adjusted_width
+            
+            # Save workbook
+            wb.save(self.output_file)
             
             print(f"\n[OK] Error report saved to: {self.output_file}")
             self.logger.info(f"Results saved to {self.output_file}")

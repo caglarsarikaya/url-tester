@@ -1,6 +1,6 @@
 # URL Tester Application
 
-> High-performance concurrent URL testing tool
+> High-performance concurrent URL testing tool (optimized build: 18MB executable)
 
 ##  How It Works
 
@@ -19,6 +19,7 @@
 2. Choose your testing mode:
    - **Option 1:** Test defined URL list
    - **Option 2:** Test URLs from sitemap(s)
+
 
 3. Results will be saved to a new Excel file with timestamp
 
