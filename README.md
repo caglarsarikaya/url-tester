@@ -44,16 +44,16 @@ Edit `urls_to_test.xlsx`:
 
 Edit `sitemaps.xlsx`:
 
-| sitemap_url                           |
-|---------------------------------------|
-| https://yoursite.com/sitemap.xml      |
-| https://yoursite.com/sitemap_news.xml |
+| sitemap_url                           | root (optional)           |
+|---------------------------------------|---------------------------|
+| https://yoursite.com/sitemap.xml      |                           |
+| https://prod.com/sitemap.xml          | https://dev.example.com   |
 
 - List **EXACTLY** which sitemap URLs you want to test (one per row)
-- App will fetch and test all URLs from those specific sitemaps
+- **Root column (optional):** Replace URL domain with custom root (e.g., test prod URLs on dev environment)
 - **NO AUTOMATIC CRAWLING:** If a sitemap contains links to other sitemaps (sitemap index), it will be SKIPPED
 - **Why?** Sitemaps can be messy with deep nesting - you control exactly what gets tested by listing specific sitemap URLs
-- You have full control - no surprises!
+- You control exactly what gets tested by listing specific sitemap URLs - no surprises!
 
 ---
 

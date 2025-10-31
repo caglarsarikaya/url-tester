@@ -145,11 +145,16 @@ class URLTester:
             
             sitemap_idx = headers.index('sitemap_url')
             
-            # Read sitemap URLs
+            # Check if root column exists (optional)
+            root_idx = headers.index('root') if 'root' in headers else None
+            
+            # Read sitemap URLs and optional root URLs
             sitemap_urls = []
             for row in ws.iter_rows(min_row=2, values_only=True):
                 if row[sitemap_idx]:
-                    sitemap_urls.append(str(row[sitemap_idx]).strip())
+                    sitemap_url = str(row[sitemap_idx]).strip()
+                    root_url = str(row[root_idx]).strip() if root_idx and row[root_idx] else None
+                    sitemap_urls.append((sitemap_url, root_url))
             
             wb.close()
             
@@ -157,9 +162,11 @@ class URLTester:
             print("[INFO] Fetching URLs from sitemaps...")
             
             all_urls = []
-            for idx, sitemap_url in enumerate(sitemap_urls, 1):
+            for idx, (sitemap_url, custom_root) in enumerate(sitemap_urls, 1):
                 print(f"[INFO] Parsing sitemap {idx}/{len(sitemap_urls)}: {sitemap_url}")
-                urls = self._parse_sitemap(sitemap_url)
+                if custom_root:
+                    print(f"[INFO] Will replace URL roots with: {custom_root}")
+                urls = self._parse_sitemap(sitemap_url, custom_root)
                 all_urls.extend(urls)
                 print(f"[OK] Found {len(urls)} URLs in this sitemap")
             
@@ -178,7 +185,7 @@ class URLTester:
             input("\nPress Enter to exit...")
             sys.exit(1)
     
-    def _parse_sitemap(self, sitemap_url):
+    def _parse_sitemap(self, sitemap_url, custom_root=None):
         """Parse a sitemap XML and extract URLs (non-recursive, only direct URLs)"""
         try:
             response = requests.get(sitemap_url, timeout=30)
@@ -207,7 +214,20 @@ class URLTester:
                 for url_element in url_elements:
                     loc = url_element.find('ns:loc', namespaces)
                     if loc is not None and loc.text:
-                        urls.append(loc.text)
+                        url = loc.text
+                        
+                        # If custom root provided, replace the URL's root
+                        if custom_root:
+                            from urllib.parse import urlparse
+                            parsed = urlparse(url)
+                            # Keep only the path, query, and fragment
+                            url = custom_root.rstrip('/') + parsed.path
+                            if parsed.query:
+                                url += '?' + parsed.query
+                            if parsed.fragment:
+                                url += '#' + parsed.fragment
+                        
+                        urls.append(url)
             
             return urls
             
