@@ -42,12 +42,31 @@ def main():
         
         print()
         print("=" * 60)
+        print("\n⚙️  Configuration (press Enter for defaults):")
+        
+        # Get concurrent workers
+        workers_input = input(f"  Concurrent threads [default: 50]: ").strip()
+        max_workers = int(workers_input) if workers_input.isdigit() else 50
+        
+        # Get timeout in milliseconds
+        timeout_input = input(f"  Request timeout in ms [default: 10000]: ").strip()
+        timeout_ms = int(timeout_input) if timeout_input.isdigit() else 10000
+        timeout = timeout_ms / 1000  # Convert to seconds for requests library
+        
+        # Get delay in milliseconds
+        delay_input = input(f"  Delay between requests in ms [default: 100]: ").strip()
+        delay_ms = int(delay_input) if delay_input.isdigit() else 100
+        delay = delay_ms / 1000  # Convert to seconds for time.sleep()
+        
+        print()
+        print(f"[INFO] Using: {max_workers} threads, {timeout_ms}ms timeout, {delay_ms}ms delay")
+        print("=" * 60)
         
         # Create configuration
         config = TestConfig(
-            max_workers=100,  # 100 concurrent threads for fast testing
-            timeout=5,        # 5 second timeout per request
-            delay=0           # No delay between submissions
+            max_workers=max_workers,
+            timeout=timeout,
+            delay=delay
         )
         
         # Create and run application

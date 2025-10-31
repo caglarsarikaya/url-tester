@@ -34,10 +34,11 @@ class URLTesterService:
         
         print(f"\n[INFO] Starting URL tests...")
         print(f"[INFO] Max concurrent requests: {self.config.max_workers}")
+        print(f"[INFO] Timeout: {int(self.config.timeout * 1000)}ms per request")
         if self.config.delay > 0:
-            print(f"[INFO] Submission delay: {self.config.delay}s between URLs")
+            print(f"[INFO] Delay: {int(self.config.delay * 1000)}ms between requests")
         else:
-            print(f"[INFO] No submission delay - maximum speed")
+            print(f"[INFO] No delay - maximum speed")
         print(f"[INFO] Press Ctrl+C to stop testing at any time")
         print("=" * 60)
         
@@ -83,6 +84,8 @@ class URLTesterService:
                             with lock:
                                 error_count += 1
                             results.append(result)
+                            # Print error immediately to console
+                            print(f"[ERROR] {result.tested_url} → {result.status_code} {result.error_message}")
                         
                         update_progress()
                         
@@ -106,6 +109,28 @@ class URLTesterService:
         print(f"  Total time: {elapsed:.1f} seconds")
         print(f"  Average rate: {total/elapsed:.1f} requests/second")
         
+        # Print error summary if there are errors
+        if results:
+            print("\n" + "=" * 60)
+            print(f"ERROR SUMMARY ({len(results)} errors):")
+            print("=" * 60)
+            
+            # Group errors by status code
+            error_groups = {}
+            for result in results:
+                status = str(result.status_code)
+                if status not in error_groups:
+                    error_groups[status] = []
+                error_groups[status].append(result.tested_url)
+            
+            # Print grouped errors
+            for status, urls in sorted(error_groups.items()):
+                print(f"\n[{status}] - {len(urls)} URL(s):")
+                for url in urls[:5]:  # Show first 5 of each type
+                    print(f"  • {url}")
+                if len(urls) > 5:
+                    print(f"  ... and {len(urls) - 5} more")
+        
         return results
     
     def _test_single_url(self, url_request: URLTestRequest) -> TestResult:
@@ -113,11 +138,21 @@ class URLTesterService:
         full_url = url_request.get_full_url()
         
         try:
+            # Add delay if configured (rate limiting)
+            if self.config.delay > 0:
+                time.sleep(self.config.delay)
+            
             response = requests.get(
                 full_url,
                 timeout=self.config.timeout,
                 allow_redirects=True,
-                headers={'User-Agent': self.config.user_agent}
+                headers={
+                    'User-Agent': self.config.user_agent,
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                    'Accept-Language': 'tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7',
+                    'Accept-Encoding': 'gzip, deflate, br',
+                    'Connection': 'keep-alive'
+                }
             )
             
             status_code = response.status_code
@@ -136,7 +171,7 @@ class URLTesterService:
                 source_url=url_request.url,
                 tested_url=full_url,
                 status_code='TIMEOUT',
-                error_message='Request timed out',
+                error_message=f'Request timed out (>{int(self.config.timeout * 1000)}ms)',
                 tested_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             )
         except requests.exceptions.ConnectionError:
